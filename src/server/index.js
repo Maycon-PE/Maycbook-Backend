@@ -6,7 +6,7 @@ const port = process.env.PORT || 8080
 
 const db = require('knex')(config)
 
-db.migrate.latest()
+// db.migrate.latest()
 
 app.use((req, res, next) => {
 	req.mysql = db
