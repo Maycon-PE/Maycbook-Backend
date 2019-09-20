@@ -1,11 +1,10 @@
 {
   "name": "backend",
-  "version": "1.0.0",
+  "version": "0.1.2",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "dev": "nodemon src/server",
-    "routes": "nodemon src/routes",
     "test": "nodemon test"
   },
   "dependencies": {

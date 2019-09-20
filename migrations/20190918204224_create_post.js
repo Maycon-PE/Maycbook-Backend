@@ -12,11 +12,21 @@ exports.up = function(knex) {
         .notNull()
 
       table
-        .string('describe', [4000])
+        .string('description', [4000])
 
       table
         .string('image')
         .defaultTo('')
+
+      table
+        .integer('author_id')
+        .unsigned()
+        .notNull()
+
+      table
+        .foreign('author_id')
+        .references('id')
+        .inTable('user')
 
       table
         .timestamp('created_at', { precision: 6 })
@@ -30,6 +40,6 @@ exports.up = function(knex) {
 
 exports.down = function(knex) {
   return knex
-  	.schema
-  	.dropTableIfExists('post')
+    .schema
+    .dropTableIfExists('post')
 };
