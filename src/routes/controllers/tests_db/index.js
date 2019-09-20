@@ -82,6 +82,18 @@ module.exports = {
 		*				\ para ser a chave estrangeira no campo `author_id`.
 		*/
 
+		const then = (text, value) => {
+			console.log(text, value)
+
+			res.send('<h1>success</h1>')
+		}
+
+		const catch_f = (err) => {
+			console.log(err)
+			
+			res.send('<h1>failed</h1>')
+		}
+
 
 		const user = {
 			name: 'Maycon',
@@ -104,19 +116,10 @@ module.exports = {
 				req
 					.mysql('post')
 					.insert({ ...post, author_id: id })
-					.then(([ id ]) => {
-						console.log('post_id ', id)
+					.then(([ id ]) => then('post_id', id))
+					.catch(err => catch_f(err))
 
-						res.send('<h1>success</h1>')
-					}).catch(err => {
-						console.log(err)
-						res.send('<h1>failed</h1>')		
-					})
-
-			}).catch(err => {
-				console.log(err)
-				res.send('<h1>failed</h1>')
-			})
+			}).catch(err => catch_f(err))
 	},
 
 	del(req, res) {
@@ -134,32 +137,32 @@ module.exports = {
 
 		console.log('table ', table)
 
+		const then = (data) => {
+			console.log('data ', data)
+
+			res.send(`<h1>success - ${ table }</h1>`)
+		}
+
+		const catch_f = (err) => {
+			console.log(err)
+
+			res.send(`<h1>failed - ${ table }</h1>`)			
+		}
+
 		if (table === 'user') {
 			req
 			.mysql('user')
 			.first()
 			.del()
-			.then(data => {
-				console.log('data ', data)
-
-				res.send(`<h1>success - ${ table }</h1>`)
-			}).catch(err => {
-				console.log(err)
-				res.send(`<h1>failed - ${ table }</h1>`)
-			})
+			.then(data => then(data))
+			.catch(err => catch_f(err))
 		} else {
 			req
 			.mysql('post')
 			.first()
 			.del()
-			.then(data => {
-				console.log('data ', data)
-
-				res.send(`<h1>success - ${ table }</h1>`)
-			}).catch(err => {
-				console.log(err)
-				res.send(`<h1>failed - ${ table }</h1>`)
-			})
+			.then(data => then(data))
+			.catch(err => catch_f(err))
 		}
 	},
 
