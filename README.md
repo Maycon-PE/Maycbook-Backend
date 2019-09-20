@@ -1,12 +1,7 @@
 # MAYCBOOK
 
-## FINALIDADE
-	Projeto desenvolvido para portfólio.
-	Feito para à prática de desenvolvimento backend (NodeJS), usando knex, mysql e express.
+## BRANCH
+ - test_db
 
-## Dependências
-	- `express`;
-	- `mysql2`;
-	- `knex`;
-	- `dotenv`.
-	
+## FINALIDADE
+	Branch usada para testar integrações com o banco de dados usando o knex.
