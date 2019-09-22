@@ -52,7 +52,9 @@ module.exports = {
 											.catch(err => res.status(500).send(err))
 
 									} else {
-										const payload = await gerate(_doc._id)
+										delete user.password
+
+										const payload = await gerate({ ['document']: _doc._id, id, ...user, image: 'default.jpg' })
 
 										res.status(201).json(payload)
 									}
@@ -71,6 +73,50 @@ module.exports = {
 		} catch(msg) {
 			res.status(400).send(msg)
 		}
+	},
+
+	login(req, res) {
+		try {
+
+			const { email, password } = req.body
+
+			req
+				.mysql('user')
+				.where({ email })
+				.first()
+				.then(async user => {
+					if (user) {
+
+						if (!await compare(password, user.password)) return res.status(400).send('Senha incorreta')
+
+						User.findOne({ user_id: user.id }, async (err, Document) => {
+
+							if (!err) {
+
+								delete user.password
+								delete user.created_at
+								delete user.updated_at
+
+								const payload = await gerate({ ['document']: Document._id, ...user })
+
+								res.status(200).json(payload)
+
+							} else {
+								res.status(500).send()
+							}
+
+						})
+
+					} else {
+						res.status(400).send('Usuário não encontrado')
+					}
+				}).catch(e => {
+					res.status(500).send()
+				})
+
+		} catch(msg) {
+			res.status(400).send(msg)
+		}
 	}
-	
+
 }

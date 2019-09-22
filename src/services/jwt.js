@@ -3,11 +3,11 @@ const { sign, verify } = require('jsonwebtoken')
 
 module.exports = {
 
-	gerate(id) {
+	gerate(slice) {
 		return new Promise((resolve, reject) => {
 			const now = Math.floor(Date.now() / 1000)
 			const payload = {
-				['document']: id,
+				...slice,
 				exp: now + (60 * 60 * 24 * 7),
 				iat: now
 			}

@@ -10,5 +10,6 @@
 ## Rotas
 
 - POST	
-	- `/user` - Cria um usuário;
+	- `/user` - Cria um usuário e inicia uma seção;
+	- `/login` - Inicia uma seção;
 	
