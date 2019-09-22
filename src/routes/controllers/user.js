@@ -40,7 +40,7 @@ module.exports = {
 							.insert(user)
 							.then(([ id ]) => {
 
-								User.create({	user_id: id	}, async (err, { _doc }) => {
+								User.create({	user_id: id	}, async (err, Document) => {
 									if (err) {
 
 										req
@@ -54,9 +54,15 @@ module.exports = {
 									} else {
 										delete user.password
 
-										const payload = await gerate({ ['document']: _doc._id, id, ...user, image: 'default.jpg' })
+										if (Document._doc) {
 
-										res.status(201).json(payload)
+											const payload = await gerate({ ['document']: Document._doc._id, id, ...user, image: 'default.jpg' })
+
+											res.status(201).json(payload)
+
+										} else {
+											res.status(500).send('Documento não existe')
+										}
 									}
 								})
 
@@ -68,7 +74,7 @@ module.exports = {
 						res.status(400).send('Usuário já existe')
 					}
 				}).catch(() => {
-					res.status(500).send()
+					res.status(500).send('Falha na consulta')
 				})			
 		} catch(msg) {
 			res.status(400).send(msg)
@@ -89,20 +95,50 @@ module.exports = {
 
 						if (!await compare(password, user.password)) return res.status(400).send('Senha incorreta')
 
+						delete user.password
+						delete user.created_at
+						delete user.updated_at
+
 						User.findOne({ user_id: user.id }, async (err, Document) => {
 
 							if (!err) {
 
-								delete user.password
-								delete user.created_at
-								delete user.updated_at
+								if (Document) {
+									console.log('tem')
 
-								const payload = await gerate({ ['document']: Document._id, ...user })
+									const payload = await gerate({ ['document']: Document._id, ...user })
 
-								res.status(200).json(payload)
+									res.status(200).json(payload)
+
+								} else {
+									console.log('não tem')
+
+									User.create({ user_id: user.id }, async (err, Document) => {
+
+										if (!err) {
+
+											if (Document._doc) {
+
+												console.log('criei')
+
+												const payload = await gerate({ ['document']: Document._doc._id, ...user })
+
+												res.status(201).json(payload)
+
+											} else {
+												res.status(500).send('Documento não existe')
+											}
+
+										} else {
+											res.status(500).send('Não foi possivél criar um documento')
+										}
+
+									})
+
+								}
 
 							} else {
-								res.status(500).send()
+								res.status(500).send('Falha na procura do documento')
 							}
 
 						})
@@ -111,7 +147,7 @@ module.exports = {
 						res.status(400).send('Usuário não encontrado')
 					}
 				}).catch(e => {
-					res.status(500).send()
+					res.status(500).send('Falha na consulta')
 				})
 
 		} catch(msg) {
