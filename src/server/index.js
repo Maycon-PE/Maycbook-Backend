@@ -1,5 +1,6 @@
 require('dotenv').config()
 const bodyParser = require('body-parser')
+const cors = require('cors')
 
 const app = require('express')()
 
@@ -12,6 +13,7 @@ const db = require('knex')(config)
 
 db.migrate.latest()
 
+app.use(cors())
 app.use(bodyParser.json())
 
 app.use((req, res, next) => {
