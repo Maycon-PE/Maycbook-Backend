@@ -21,13 +21,13 @@ exports.up = function(knex) {
         .notNull()
 
       table
-        .integer('posts')
-        .unsigned()
-        .defaultTo(0)
-
-      table
-        .text('friends', ['longtext'])
+        .string('genre', 1)
         .notNull()
+
+      table 
+        .string('image')
+        .notNull()
+        .defaultTo('default.jpg')
 
       table
         .timestamp('created_at', { precision: 6 })

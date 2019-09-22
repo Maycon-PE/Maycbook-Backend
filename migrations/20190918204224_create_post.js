@@ -8,17 +8,6 @@ exports.up = function(knex) {
         .primary()
 
       table
-        .string('author')
-        .notNull()
-
-      table
-        .string('description', [4000])
-
-      table
-        .string('image')
-        .defaultTo('')
-
-      table
         .integer('author_id')
         .unsigned()
         .notNull()

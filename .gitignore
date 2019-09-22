@@ -1,9 +1,6 @@
 # packages
 node_modules
 
-# diagrams
-ER Diagram
-
 # environment variables
 .env
 
