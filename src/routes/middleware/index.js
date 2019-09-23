@@ -14,7 +14,15 @@ module.exports = (req, res, next) => {
 
 		const [bearer, hash] = token.split(' ')
 
-		verify(hash, res => res.status && next())
+		verify(hash, res => {
+			if (res.status) {
+				req.payload = res.decoded
+
+				next()
+			} else {
+				res.status(401).send(res.msg)		
+			}
+		})
 
 	} catch(msg) {
 		res.status(401).send(msg)

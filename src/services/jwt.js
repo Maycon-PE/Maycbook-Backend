@@ -24,7 +24,7 @@ module.exports = {
 
 	verify(hash, cb) {
 		verify(hash, process.env.SECRET_WORD || 'development', (err, decoded) => {
-			if (err) return cb({ status: false })
+			if (err) return cb({ status: false, msg: 'Token expirado' })
 
 			cb({ status: true, decoded })
 		})

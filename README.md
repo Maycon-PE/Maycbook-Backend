@@ -9,7 +9,10 @@
 
 ## Rotas
 
+Rotas com o prefixo `/auth` passará por um middleware que verifica validade do token
+
 - POST	
 	- `/user` - Cria um usuário e inicia uma seção;
 	- `/login` - Inicia uma seção;
+	- `/auth/reconnect` - Possibilita uma reconexão. 
 	

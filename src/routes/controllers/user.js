@@ -104,22 +104,18 @@ module.exports = {
 							if (!err) {
 
 								if (Document) {
-									console.log('tem')
 
 									const payload = await gerate({ ['document']: Document._id, ...user })
 
 									res.status(200).json(payload)
 
 								} else {
-									console.log('não tem')
 
 									User.create({ user_id: user.id }, async (err, Document) => {
 
 										if (!err) {
 
 											if (Document._doc) {
-
-												console.log('criei')
 
 												const payload = await gerate({ ['document']: Document._doc._id, ...user })
 
@@ -153,6 +149,10 @@ module.exports = {
 		} catch(msg) {
 			res.status(400).send(msg)
 		}
+	},
+
+	reconnect(req, res) {
+		res.status(200).json(req.payload)
 	}
 
 }
