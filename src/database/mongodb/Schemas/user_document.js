@@ -7,11 +7,9 @@ const user_document = new Schema({
 		min: 1
 	},
 	friends: [Number],
-	posts: [Schema.Types.ObjectId],
-	tallks: [Schema.Types.ObjectId]
+	posts: [Number]
 }, {
 	timestamps: true
 })
-
 
 module.exports = model('user_document', user_document)

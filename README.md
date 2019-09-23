@@ -5,7 +5,7 @@
 
 ## FINALIDADE
 	Projeto desenvolvido para portfólio.
-	Feito para à prática de desenvolvimento backend (NodeJS), usando knex, mysql e express.
+	Feito para à prática de desenvolvimento backend (NodeJS), implementando encriptação, variáveis de ambientes, token, banco de dados relacional e não relacional.
 
 ## Rotas
 

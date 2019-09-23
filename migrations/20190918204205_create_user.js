@@ -3,12 +3,13 @@ exports.up = function(knex) {
   return knex
   	.schema
   	.createTable('user', table => {
+
   		table
         .increments('id')
         .primary()
 
   		table
-        .string('name')
+        .string('name', 25)
         .notNull()
 
   		table
@@ -38,10 +39,10 @@ exports.up = function(knex) {
         .defaultTo(knex.fn.now(6))
 
   	})
-};
+}
 
 exports.down = function(knex) {
   return knex
   	.schema
   	.dropTableIfExists('user')
-};
+}

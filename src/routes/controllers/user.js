@@ -1,13 +1,25 @@
 require('dotenv').config()
 const { genSaltSync, hashSync, compare } = require('bcryptjs')
-const { gerate, verify } = require('../../services/jwt')
+const { gerate } = require('../../services/jwt')
 
-const User = require('../../database/mongodb/Schemas/user_document')
+User_init = require('../../database/mongodb/inits/user_init')
+Post_init = require('../../database/mongodb/inits/post_init')
+Talk_init = require('../../database/mongodb/inits/talk_init')
 
 module.exports = {
 
 	store(req, res) {
 		try {
+
+			const deleteUser = (id, msg) => {
+				req
+					.mysql('user')
+					.where({ id })
+					.first()
+					.del()
+					.then(() => res.status(500).send(msg))
+					.catch(err => res.status(500).send(err))
+			}
 
 			const user = { ...req.body }
 
@@ -40,32 +52,44 @@ module.exports = {
 							.insert(user)
 							.then(([ id ]) => {
 
-								User.create({	user_id: id	}, async (err, Document) => {
-									if (err) {
+								User_init
+									.init(id)
+									.then(user_document_id => {
 
-										req
-											.mysql('user')
-											.where({ id })
-											.first()
-											.del()
-											.then(() => res.status(500).send(err))
-											.catch(err => res.status(500).send(err))
+										Talk_init
+											.init(id)
+											.then(talk_document_id => {
 
-									} else {
-										delete user.password
+												Post_init
+													.init(id)
+													.then(post_document_id => {
 
-										if (Document._doc) {
+															delete user.password
 
-											const payload = await gerate({ ['document']: Document._doc._id, id, ...user, image: 'default.jpg' })
+															const slice = {
+																['documents']: { 
+																	user: user_document_id,
+																	post: post_document_id,
+																	talk: talk_document_id
+																}, 
+																id, 
+																...user, 
+																image: 'default.jpg'
+															}
 
-											res.status(201).json(payload)
+															gerate(slice)
+																.then(payload => {
+																	res.status(201).json(payload)
+																}).catch(err => {
+																	res.status(500).send(err)
+																})
 
-										} else {
-											res.status(500).send('Documento não existe')
-										}
-									}
-								})
+													}).catch(err => deleteUser(id, err))
 
+											}).catch(err => deleteUser(id, err))
+
+									}).catch(err => deleteUser(id, err))
+								
 							}).catch(err => {
 								res.status(500).send(err)
 							})
@@ -99,45 +123,39 @@ module.exports = {
 						delete user.created_at
 						delete user.updated_at
 
-						User.findOne({ user_id: user.id }, async (err, Document) => {
+						User_init
+							.find(user.id)
+							.then(user_document_id => {
 
-							if (!err) {
+								Talk_init
+									.find(user.id)
+									.then(talk_document_id => {
 
-								if (Document) {
+										Post_init
+											.find(user.id)
+											.then(post_document_id => {
 
-									const payload = await gerate({ ['document']: Document._id, ...user })
+												const slice = {
+													['documents']: { 
+														user: user_document_id,
+														post: post_document_id,
+														talk: talk_document_id
+													}, 
+													...user
+												}
 
-									res.status(200).json(payload)
+												gerate(slice)
+													.then(payload => {
+														res.status(200).json(payload)
+													}).catch(err => {
+														res.status(500).send(err)
+													})
 
-								} else {
+											}).catch(err => res.status(500).send(err))
 
-									User.create({ user_id: user.id }, async (err, Document) => {
+									}).catch(err => res.status(500).send(err))
 
-										if (!err) {
-
-											if (Document._doc) {
-
-												const payload = await gerate({ ['document']: Document._doc._id, ...user })
-
-												res.status(201).json(payload)
-
-											} else {
-												res.status(500).send('Documento não existe')
-											}
-
-										} else {
-											res.status(500).send('Não foi possivél criar um documento')
-										}
-
-									})
-
-								}
-
-							} else {
-								res.status(500).send('Falha na procura do documento')
-							}
-
-						})
+							}).catch(err => res.status(500).send(err))
 
 					} else {
 						res.status(400).send('Usuário não encontrado')
