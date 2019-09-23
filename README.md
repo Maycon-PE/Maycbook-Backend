@@ -9,7 +9,7 @@
 
 ## Rotas
 
-Rotas com o prefixo `/auth` passará por um middleware que verifica validade do token
+Rotas com o prefixo `/auth` passará por um middleware que verifica a validade do token.
 
 - POST	
 	- `/user` - Cria um usuário e inicia uma seção;
