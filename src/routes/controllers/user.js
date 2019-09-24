@@ -41,6 +41,8 @@ module.exports = {
 
 						if (user.genre !== 'm' && user.genre !== 'f') throw 'Gênero inválido!!!'
 
+						user.password = user.password.toLowerCase()	
+
 						const salt = genSaltSync(10)
 
 						user.password = hashSync(user.password, salt)
@@ -108,7 +110,8 @@ module.exports = {
 	login(req, res) {
 		try {
 
-			const { email, password } = req.body
+			const { email } = req.body
+			let { password } = req.body
 
 			req
 				.mysql('user')
@@ -116,6 +119,8 @@ module.exports = {
 				.first()
 				.then(async user => {
 					if (user) {
+
+						password = password.toLowerCase()
 
 						if (!await compare(password, user.password)) return res.status(400).send('Senha incorreta')
 
