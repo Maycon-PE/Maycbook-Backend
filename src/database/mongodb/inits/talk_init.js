@@ -65,10 +65,86 @@ function init(id) {
 	})
 }
 
+function update({ id, data }) {
+	return new Promise((resolve, reject) => {
+		Talk.updateOne({ user_id: id }, data, (err, result) => {
+
+			if (err) {
+
+				reject('Erro na atualização')
+
+			} else {
+
+				if (result) {
+
+					if (result.nModified) {
+
+						resolve()
+
+					} else {
+
+						reject('Nada alterado')
+
+					}
+
+				} else {
+
+					reject('Descrição do resultado nulo')
+
+				}
+
+			}
+
+		})
+	})
+}
+
+function setMessage({ sended, name, me, you, msg }) {
+	return new Promise((resolve, reject) => {
+		find(me)
+			.then(my_document => {
+				const previusPrivate = my_document.private.filter(({ who_id }) => who_id === you)
+
+				const date = new Date()
+
+				const date_formated = `${ date.getDate() < 10 ? '0' + date.getDate() : date.getDate() }/${ date.getMonth() +  1 < 10 ? '0' + (date.getMonth() +  1) : date.getMonth() }/${ date.getFullYear() }-${ date.getHours() < 10 ? '0' + date.getHours() : date.getHours() }:${ date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes() }:${ date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds() }`
+
+				if (previusPrivate.length) {
+					const newMsg = {
+						id: sended, msg,
+						date: date_formated
+					}
+					const data = { who_id: you, data: [ ...previusPrivate[0].data, newMsg ] }
+					my_document.private = my_document.private.map(privateData => privateData.who_id === you ? data : privateData )
+				} else {
+					my_document.private.push({
+						who_id: you,
+						initio: date_formated,
+						name,
+						data: [{
+							id: sended,
+							msg,
+							date: date_formated
+						}]
+					})
+				}
+				
+				update({ id: me, data: my_document })
+					.then(() => {
+						resolve()
+					}).catch(err => reject(err))
+			}).catch(err => reject(err))
+	})
+}
+
 module.exports = {
 
 	find,
 
-	init
+	init,
+
+	setMessage,
+
+	update
 
 }

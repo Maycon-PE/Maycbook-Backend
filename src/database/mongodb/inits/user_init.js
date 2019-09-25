@@ -65,10 +65,46 @@ function init(id) {
 	})
 }
 
+function update({ id, data }) {
+	return new Promise((resolve, reject) => {
+		User.updateOne({ user_id: id }, data, (err, Document) => {
+
+			if (err) {
+
+				reject('Erro na atualização')
+
+			} else {
+
+				if (Document) {
+
+					if (Document.nModified) {
+
+						resolve(Document)
+
+					} else {
+
+						reject('Nada auterado')
+
+					}
+
+				} else {
+
+					reject('Não deu erro, mas não foi encontrado o documento')
+
+				}
+
+			}
+
+		})
+	})
+}
+
 module.exports = {
 
 	find,
 
-	init
+	init,
+
+	update
 
 }

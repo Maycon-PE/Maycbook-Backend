@@ -12,19 +12,23 @@ const user_document = new Schema({
 		who: Number,
 		name: String,
 		msg: String,
-		image: String
+		image: String,
+		date: String
 	}],
 	invites: [{
 		who: Number,
 		name: String,
-		image: String
+		image: String,
+		date: String
 	}],
 	dialogues: [{
 		who: Number,
 		name: String,
 		msg: String,
-		image: String
-	}]
+		image: String,
+		date: String
+	}],
+	solicitations: [Number]
 }, {
 	timestamps: true
 })

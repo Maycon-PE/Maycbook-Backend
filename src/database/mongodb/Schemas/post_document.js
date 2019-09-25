@@ -6,13 +6,18 @@ const post_document = new Schema({
 		required: true,
 		min: 1
 	},
+	post_id: {
+		type: Number,
+		required: true,
+		min: 1
+	},
 	data: {
 		rate: {
 			likes: [ Number ],
 			deslikes: [ Number ]
 		},
 		comments: [{
-			who_id: {
+			who: {
 				type: Number,
 				required: true,
 				min: 1

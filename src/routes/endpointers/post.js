@@ -6,5 +6,6 @@ routes
 	.post('/user', user.store)
 	.post('/login', user.login)
 	.post('/auth/reconnect', user.reconnect)
+	.post('/auth/action/:recipient/:action', user.actions)
 
 module.exports = app => app.use(routes)

@@ -6,6 +6,8 @@ User_init = require('../../database/mongodb/inits/user_init')
 Post_init = require('../../database/mongodb/inits/post_init')
 Talk_init = require('../../database/mongodb/inits/talk_init')
 
+// const date_formated = '../date_formated'
+
 module.exports = {
 
 	store(req, res) {
@@ -54,39 +56,31 @@ module.exports = {
 							.insert(user)
 							.then(([ id ]) => {
 
-								User_init
-									.init(id)
+								User_init.init(id)
 									.then(user_document => {
 
-										Talk_init
-											.init(id)
+										Talk_init.init(id)
 											.then(talk_document => {
 
-												Post_init
-													.init(id)
-													.then(post_document => {
+												delete user.password
 
-															delete user.password
+												const slice = {
+													['documents']: { 
+														user: user_document,
+														post: post_document,
+														talk: talk_document
+													}, 
+													id, 
+													...user, 
+													image: 'default.jpg'
+												}
 
-															const slice = {
-																['documents']: { 
-																	user: user_document,
-																	post: post_document,
-																	talk: talk_document
-																}, 
-																id, 
-																...user, 
-																image: 'default.jpg'
-															}
-
-															gerate(slice)
-																.then(payload => {
-																	res.status(201).json(payload)
-																}).catch(err => {
-																	res.status(500).send(err)
-																})
-
-													}).catch(err => deleteUser(id, err))
+												gerate(slice)
+													.then(payload => {
+														res.status(201).json(payload)
+													}).catch(err => {
+														res.status(500).send(err)
+													})
 
 											}).catch(err => deleteUser(id, err))
 
@@ -128,35 +122,26 @@ module.exports = {
 						delete user.created_at
 						delete user.updated_at
 
-						User_init
-							.find(user.id)
+						User_init.find(user.id)
 							.then(user_document => {
 
-								Talk_init
-									.find(user.id)
+								Talk_init.find(user.id)
 									.then(talk_document => {
 
-										Post_init
-											.find(user.id)
-											.then(post_document => {
+										const slice = {
+											['documents']: { 
+												user: user_document,
+												talk: talk_document
+											}, 
+											...user
+										}
 
-												const slice = {
-													['documents']: { 
-														user: user_document,
-														post: post_document,
-														talk: talk_document
-													}, 
-													...user
-												}
-
-												gerate(slice)
-													.then(payload => {
-														res.status(200).json(payload)
-													}).catch(err => {
-														res.status(500).send(err)
-													})
-
-											}).catch(err => res.status(500).send(err))
+										gerate(slice)
+											.then(payload => {
+												res.status(200).json(payload)
+											}).catch(err => {
+												res.status(500).send(err)
+											})
 
 									}).catch(err => res.status(500).send(err))
 
@@ -176,6 +161,79 @@ module.exports = {
 
 	reconnect(req, res) {
 		res.status(200).json(req.payload)
+	},
+
+	actions(req, res) {
+
+		try {
+			const date = new Date()
+
+			const date_formated = `${ date.getDate() < 10 ? '0' + date.getDate() : date.getDate() }/${ date.getMonth() +  1 < 10 ? '0' + (date.getMonth() +  1) : date.getMonth() }/${ date.getFullYear() }-${ date.getHours() < 10 ? '0' + date.getHours() : date.getHours() }:${ date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes() }:${ date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds() }`
+
+			const recipient = +req.params.recipient
+			const action = req.params.action
+
+			const data = { 
+				who: +req.payload.id, 
+				name: req.payload.name, 
+				image: req.payload.image, 
+				date: date_formated,
+				...req.body 
+			}
+
+			User_init.find(recipient)
+				.then(recipient_document => {
+
+					if (action === 'notifications') recipient_document[action].push(data)
+					else if (action === 'dialogues') {
+						if (recipient_document[action].find(cvs => cvs.who === data.who)) {
+							recipient_document[action] = recipient_document[action].map(tupla => {
+
+								if (tupla.who === data.who) {
+									tupla.msg = data.msg,
+									tupla.image = req.payload.image,
+									tupla.date = date_formated
+								}
+
+								return tupla
+							})
+						} else recipient_document[action].push(data)
+					} else {
+						if (!recipient_document[action].find(add => add.who === data.who)) recipient_document[action].push(data)
+					}
+
+					User_init.update({ id: recipient, data: recipient_document })
+						.then(() => {
+
+							if (action === 'dialogues') {
+
+								Promise.all([
+									Talk_init.setMessage({ sended: +req.payload.id, name: req.payload.name, me: +req.payload.id, you: recipient, msg: data.msg }),
+									Talk_init.setMessage({ sended: +req.payload.id, name: req.payload.name, me: recipient, you: +req.payload.id, msg: data.msg })
+								]).then(() => console.log('socket emitindo'))
+								.catch(err => console.log(err))
+
+							} else if (action === 'invites') {
+								User_init.find(+req.payload.id)
+									.then(my_document => {
+									  !my_document.solicitations.includes(recipient) &&	my_document.solicitations.push(recipient)
+
+										User_init.update({ id: +req.payload.id, data: my_document })
+											.then(() => console.log('socket emitindo'))
+											.catch(err => console.log(err))
+
+									}).catch(err => console.log(err))
+							}
+
+							res.status(200).json(data.msg)
+						}).catch(err => res.status(500).send(err))
+
+				}).catch(err => res.status(400).send(err))
+			
+		} catch (err) {
+			res.status(500).send(err)
+		}
+
 	}
 
 }

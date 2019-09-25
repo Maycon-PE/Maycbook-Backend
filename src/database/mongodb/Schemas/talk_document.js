@@ -7,7 +7,13 @@ const talk_document = new Schema({
 		min: 1
 	},
 	private: [{
-		who_id: Number,
+		who_id: {
+			type: Number,
+			required: true,
+			min: 1
+		},
+		name: String,
+		initio: String,
 		data: [{
 			id: {
 				type: Number,
@@ -17,7 +23,8 @@ const talk_document = new Schema({
 			msg: {
 				type: String,
 				required: true
-			}
+			},
+			date: String
 		}]
 	}]
 }, {
