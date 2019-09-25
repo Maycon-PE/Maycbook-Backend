@@ -7,7 +7,24 @@ const user_document = new Schema({
 		min: 1
 	},
 	friends: [Number],
-	posts: [Number]
+	posts: [Number],
+	notifications: [{
+		who: Number,
+		name: String,
+		msg: String,
+		image: String
+	}],
+	invites: [{
+		who: Number,
+		name: String,
+		image: String
+	}],
+	dialogues: [{
+		who: Number,
+		name: String,
+		msg: String,
+		image: String
+	}]
 }, {
 	timestamps: true
 })

@@ -56,23 +56,23 @@ module.exports = {
 
 								User_init
 									.init(id)
-									.then(user_document_id => {
+									.then(user_document => {
 
 										Talk_init
 											.init(id)
-											.then(talk_document_id => {
+											.then(talk_document => {
 
 												Post_init
 													.init(id)
-													.then(post_document_id => {
+													.then(post_document => {
 
 															delete user.password
 
 															const slice = {
 																['documents']: { 
-																	user: user_document_id,
-																	post: post_document_id,
-																	talk: talk_document_id
+																	user: user_document,
+																	post: post_document,
+																	talk: talk_document
 																}, 
 																id, 
 																...user, 
@@ -130,21 +130,21 @@ module.exports = {
 
 						User_init
 							.find(user.id)
-							.then(user_document_id => {
+							.then(user_document => {
 
 								Talk_init
 									.find(user.id)
-									.then(talk_document_id => {
+									.then(talk_document => {
 
 										Post_init
 											.find(user.id)
-											.then(post_document_id => {
+											.then(post_document => {
 
 												const slice = {
 													['documents']: { 
-														user: user_document_id,
-														post: post_document_id,
-														talk: talk_document_id
+														user: user_document,
+														post: post_document,
+														talk: talk_document
 													}, 
 													...user
 												}
