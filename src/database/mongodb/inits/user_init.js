@@ -67,7 +67,7 @@ function init(id) {
 
 function update({ id, data }) {
 	return new Promise((resolve, reject) => {
-		User.updateOne({ user_id: id }, data, (err, Document) => {
+		User.updateOne({ user_id: id }, data, (err, result) => {
 
 			if (err) {
 
@@ -75,15 +75,15 @@ function update({ id, data }) {
 
 			} else {
 
-				if (Document) {
+				if (result) {
 
-					if (Document.nModified) {
+					if (result.nModified) {
 
-						resolve(Document)
+						resolve()
 
 					} else {
 
-						reject('Nada auterado')
+						reject('Nada alterado')
 
 					}
 

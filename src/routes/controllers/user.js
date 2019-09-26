@@ -2,11 +2,9 @@ require('dotenv').config()
 const { genSaltSync, hashSync, compare } = require('bcryptjs')
 const { gerate } = require('../../services/jwt')
 
-User_init = require('../../database/mongodb/inits/user_init')
-Post_init = require('../../database/mongodb/inits/post_init')
-Talk_init = require('../../database/mongodb/inits/talk_init')
-
-// const date_formated = '../date_formated'
+const User_init = require('../../database/mongodb/inits/user_init')
+const Post_init = require('../../database/mongodb/inits/post_init')
+const Talk_init = require('../../database/mongodb/inits/talk_init')
 
 module.exports = {
 
@@ -210,7 +208,10 @@ module.exports = {
 								Promise.all([
 									Talk_init.setMessage({ sended: +req.payload.id, name: req.payload.name, me: +req.payload.id, you: recipient, msg: data.msg }),
 									Talk_init.setMessage({ sended: +req.payload.id, name: req.payload.name, me: recipient, you: +req.payload.id, msg: data.msg })
-								]).then(() => console.log('socket emitindo'))
+								]).then(() => {
+									const socket_recipient = req.sockets[`${recipient}`]
+									if (socket_recipient !== 'offline') req.io.to(socket_recipient).emit('dialogues', data)
+								})
 								.catch(err => console.log(err))
 
 							} else if (action === 'invites') {
@@ -219,10 +220,16 @@ module.exports = {
 									  !my_document.solicitations.includes(recipient) &&	my_document.solicitations.push(recipient)
 
 										User_init.update({ id: +req.payload.id, data: my_document })
-											.then(() => console.log('socket emitindo'))
+											.then(() => {
+												const socket_recipient = req.sockets[`${recipient}`]
+												if (socket_recipient !== 'offline') req.io.to(socket_recipient).emit('invites', data)
+											})
 											.catch(err => console.log(err))
 
 									}).catch(err => console.log(err))
+							} else {
+								const socket_recipient = req.sockets[`${recipient}`]
+								if (socket_recipient !== 'offline') req.io.to(socket_recipient).emit('notifications', data)
 							}
 
 							res.status(200).json(data.msg)

@@ -1,38 +1,26 @@
 const Sockets = require('../Schemas/socket_document')
 
-function find(id) {
-	return new Promise((resolve, reject) => {
-		Sockets.findOne({ user_id: id }, (err, Document) => {
+function findUnique() {
+	return new Promise(async (resolve, reject) => {
+		const socket_document = await Sockets.findOne({}, {}, { sort: { 'createdAt': -1 } })
 
-			if (err) {
+		if (!socket_document) {
 
-				init(id)
-					.then(socket_document => resolve(socket_document))
-					.catch(err => reject(err))
+			init()
+				.then(socket_document => resolve(socket_document))
+				.catch(err => reject(err))
 
-			} else {
+		} else {
 
-				if (Document) {
+			resolve(socket_document)
 
-					resolve(Document)
-
-				} else {
-
-					init(id)
-						.then(socket_document => resolve(socket_document))
-						.catch(err => reject('Não achei e não conseguir criar'))
-
-				}
-
-			}
-
-		})
+		}
 	})
 }
 
-function init(id) {
+function init() {
 	return new Promise((resolve, reject) => {
-		Sockets.create({ user_id: id }, (err, Document) => {
+		Sockets.create({ data: {} }, (err, Document) => {
 
 			if (err) {
 				// Não tentarei encontrar chamando a função 'find'
@@ -65,31 +53,23 @@ function init(id) {
 	})
 }
 
-function update({ id, data }) {
+function update({ _id, data }) {
 	return new Promise((resolve, reject) => {
-		Sockets.updateOne({ user_id: id }, data, (err, Document) => {
+		Sockets.updateOne({ _id }, data, (err, result) => {
 
 			if (err) {
 
-				reject('Erro na atualização')
+				reject(err)
 
 			} else {
 
-				if (Document) {
+				if (result.nModified) {
 
-					if (Document.nModified) {
-
-						resolve(Document)
-
-					} else {
-
-						reject('Nada auterado')
-
-					}
+					resolve()
 
 				} else {
 
-					reject('Não deu erro, mas não foi encontrado o documento')
+					reject('Nada alterado')
 
 				}
 
@@ -99,13 +79,47 @@ function update({ id, data }) {
 	})
 }
 
+function getin(data) {
+	return new Promise((resolve, reject) => {
+		findUnique()
+			.then(socket_document => {
+
+				console.log('socket_document ', socket_document)
+
+				socket_document.data[data.user_id] = data.socket_id
+
+				update({ _id: socket_document._id, data: socket_document })
+					.then(() => resolve())
+					.catch(err => reject(err))
+
+			}).catch(err => reject(err))
+	})
+}
+
+function getout(value) {
+	return new Promise((resolve, reject) => {
+		findUnique()
+			.then(socket_document => {
+
+				Object.keys(socket_document.data).forEach(key => {
+					if (socket_document.data[key] === value) {
+						socket_document.data[key] = 'offline'
+					}
+				})
+
+				update({ _id: socket_document._id, data: socket_document })
+					.then(() => resolve())
+					.catch(err => reject(err))
+
+			})
+	})
+}
+
 
 module.exports = {
 
-	find,
+	getin,
 
-	init,
-
-	update
+	getout
 
 }

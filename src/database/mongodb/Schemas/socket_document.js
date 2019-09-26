@@ -1,10 +1,7 @@
-const { model, schema } = require('mongoose')
+const { model, Schema } = require('mongoose')
 
-const socket_document = new schema({
-	sockets_id: [{
-		user_id: Number,
-		socket_id: String
-	}]
+const socket_document = new Schema({
+	data: Object
 })
 
 module.exports = model('socket_document', socket_document)
