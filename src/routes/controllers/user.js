@@ -158,7 +158,33 @@ module.exports = {
 	},
 
 	reconnect(req, res) {
-		res.status(200).json(req.payload)
+		User_init.find(req.payload.id)
+			.then(user_document => {
+
+				Talk_init.find(req.payload.id)
+					.then(talk_document => {
+
+						delete req.payload.documents
+						delete req.payload.token
+
+						const slice = {
+							['documents']: { 
+								user: user_document,
+								talk: talk_document
+							}, 
+							...req.payload
+						}
+
+						gerate(slice)
+							.then(payload => {
+								res.status(200).json(payload)
+							}).catch(err => {
+								res.status(500).send(err)
+							})
+
+					}).catch(err => res.status(500).send(err))
+
+			}).catch(err => res.status(500).send(err))
 	},
 
 	actions(req, res) {
@@ -182,7 +208,7 @@ module.exports = {
 			User_init.find(recipient)
 				.then(recipient_document => {
 
-					if (action === 'notifications') recipient_document[action].push(data)
+					if (action === 'notifications') recipient_document[action].unshift(data)
 					else if (action === 'dialogues') {
 						if (recipient_document[action].find(cvs => cvs.who === data.who)) {
 							recipient_document[action] = recipient_document[action].map(tupla => {
@@ -195,9 +221,9 @@ module.exports = {
 
 								return tupla
 							})
-						} else recipient_document[action].push(data)
+						} else recipient_document[action].unshift(data)
 					} else {
-						if (!recipient_document[action].find(add => add.who === data.who)) recipient_document[action].push(data)
+						if (!recipient_document[action].find(add => add.who === data.who)) recipient_document[action].unshift(data)
 					}
 
 					User_init.update({ id: recipient, data: recipient_document })

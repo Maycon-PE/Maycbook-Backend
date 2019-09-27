@@ -84,8 +84,6 @@ function getin(data) {
 		findUnique()
 			.then(socket_document => {
 
-				console.log('socket_document ', socket_document)
-
 				socket_document.data[data.user_id] = data.socket_id
 
 				update({ _id: socket_document._id, data: socket_document })
