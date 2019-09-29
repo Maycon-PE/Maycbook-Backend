@@ -28,7 +28,7 @@ exports.up = function(knex) {
       table 
         .string('image')
         .notNull()
-        .defaultTo('default.jpg')
+        .defaultTo('profiles/default-m.jpg')
 
       table
         .timestamp('created_at', { precision: 6 })

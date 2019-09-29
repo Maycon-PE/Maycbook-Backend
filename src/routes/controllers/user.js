@@ -1,4 +1,3 @@
-require('dotenv').config()
 const { genSaltSync, hashSync, compare } = require('bcryptjs')
 const { gerate } = require('../../services/jwt')
 
@@ -8,8 +7,9 @@ const Talk_init = require('../../database/mongodb/inits/talk_init')
 
 module.exports = {
 
-	store(req, res) {
-		try {
+		store(req, res) {
+
+			try {
 
 			const deleteUser = (id, msg) => {
 				req
@@ -22,6 +22,7 @@ module.exports = {
 			}
 
 			const user = { ...req.body }
+
 
 			req
 				.mysql('user')
@@ -49,6 +50,8 @@ module.exports = {
 							
 						delete user.confirmPassword
 
+						user.image = `profiles/default-${user.genre}.jpg`
+
 						req
 							.mysql('user')
 							.insert(user)
@@ -65,12 +68,10 @@ module.exports = {
 												const slice = {
 													['documents']: { 
 														user: user_document,
-														post: post_document,
 														talk: talk_document
 													}, 
 													id, 
-													...user, 
-													image: 'default.jpg'
+													...user
 												}
 
 												gerate(slice)
@@ -198,9 +199,7 @@ module.exports = {
 			const action = req.params.action
 
 			const data = { 
-				who: +req.payload.id, 
-				name: req.payload.name, 
-				image: req.payload.image, 
+				who: +req.payload.id,  
 				date: date_formated,
 				...req.body 
 			}
@@ -215,7 +214,6 @@ module.exports = {
 
 								if (tupla.who === data.who) {
 									tupla.msg = data.msg,
-									tupla.image = req.payload.image,
 									tupla.date = date_formated
 								}
 

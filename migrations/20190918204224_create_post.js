@@ -9,18 +9,22 @@ exports.up = function(knex) {
         .primary()
 
       table
-        .binary('content')
+        .string('path')
         .notNull()
 
       table
-        .integer('likes')  
-        .unsigned()
-        .defaultTo(0)
+        .string('content', 300)
+        .notNull()
 
-      table
-        .integer('deslikes')  
-        .unsigned()
-        .defaultTo(0)
+      // table
+      //   .integer('likes')  
+      //   .unsigned()
+      //   .defaultTo(0)
+
+      // table
+      //   .integer('deslikes')  
+      //   .unsigned()
+      //   .defaultTo(0)
 
       // Chave estrangeira :  
 

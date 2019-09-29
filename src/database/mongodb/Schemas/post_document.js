@@ -8,13 +8,29 @@ const post_document = new Schema({
 	},
 	post_id: {
 		type: Number,
-		required: true,
 		min: 1
 	},
+	date: String,
 	data: {
 		rate: {
-			likes: [ Number ],
-			deslikes: [ Number ]
+			likes: [ {
+				who: {
+					type: Number,
+					required: true,
+					min: 1
+				},
+				name: String,
+				image: String,
+			}],
+			deslikes: [{
+				who: {
+					type: Number,
+					required: true,
+					min: 1
+				},
+				name: String,
+				image: String,
+			}]
 		},
 		comments: [{
 			who: {
@@ -22,6 +38,9 @@ const post_document = new Schema({
 				required: true,
 				min: 1
 			},
+			name: String,
+			image: String,
+			date: String,
 			msg: String
 		}]
 	}

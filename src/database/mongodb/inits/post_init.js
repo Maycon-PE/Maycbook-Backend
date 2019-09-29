@@ -65,10 +65,46 @@ function init(id) {
 	})
 }
 
+function update({ _id, data }) {
+	return new Promise((resolve, reject) => {
+		Post.updateOne({ _id }, data, (err, result) => {
+
+			if (err) {
+
+				reject('Erro na atualização')
+
+			} else {
+
+				if (result) {
+
+					if (result.nModified) {
+
+						resolve()
+
+					} else {
+
+						reject('Nada alterado')
+
+					}
+
+				} else {
+
+					reject('Não deu erro, mas não foi encontrado o documento')
+
+				}
+
+			}
+
+		})
+	})
+}
+
 module.exports = {
 
 	find,
 
-	init
+	init, 
+
+	update
 
 }

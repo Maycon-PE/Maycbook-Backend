@@ -120,7 +120,6 @@ function setMessage({ sended, name, me, you, msg }) {
 					my_document.private.push({
 						who_id: you,
 						initio: date_formated,
-						name,
 						data: [{
 							id: sended,
 							msg,

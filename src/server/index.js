@@ -39,6 +39,8 @@ io.on('connection', socket => {
 		})
 })
 
+app.use(require('express').static('../static'))
+
 app.use((req, res, next) => {
 	req.mysql = db
 	req.io = io
