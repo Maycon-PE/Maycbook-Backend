@@ -1,6 +1,9 @@
 # packages
 node_modules
 
+# img
+*.jpg*
+
 # environment variables
 .env
 
