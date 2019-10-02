@@ -1,12 +1,12 @@
 const Post = require('../Schemas/post_document')
 
-function find(id) {
+function find(where) {
 	return new Promise((resolve, reject) => {
-		Post.findOne({ user_id: id }, (err, Document) => {
+		Post.findOne(where, (err, Document) => {
 
 			if (err) {
 
-				init(id)
+				init(where)
 					.then(post_document => resolve(post_document))
 					.catch(err => reject(err))
 
@@ -18,7 +18,7 @@ function find(id) {
 
 				} else {
 
-					init(id)
+					init(where)
 						.then(post_document => resolve(post_document))
 						.catch(err => reject('Não achei e não conseguir criar'))
 
@@ -30,9 +30,9 @@ function find(id) {
 	})
 }
 
-function init(id) {
+function init(where) {
 	return new Promise((resolve, reject) => {
-		Post.create({ user_id: id }, (err, Document) => {
+		Post.create(where, (err, Document) => {
 
 			if (err) {
 				// Não tentarei encontrar chamando a função 'find'
@@ -65,9 +65,18 @@ function init(id) {
 	})
 }
 
-function update({ _id, data }) {
+function aggregate(agg) {
 	return new Promise((resolve, reject) => {
-		Post.updateOne({ _id }, data, (err, result) => {
+		Post.aggregate(agg, (err, Documents) => {
+
+			!err ? resolve(Documents) : reject(err)
+		})
+	})
+}
+
+function update({ where, data }) {
+	return new Promise((resolve, reject) => {
+		Post.updateOne(where, data, (err, result) => {
 
 			if (err) {
 
@@ -104,6 +113,8 @@ module.exports = {
 	find,
 
 	init, 
+
+	aggregate,
 
 	update
 

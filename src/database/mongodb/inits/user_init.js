@@ -1,12 +1,12 @@
 const User = require('../Schemas/user_document')
 
-function find(id) {
+function find(where) {
 	return new Promise((resolve, reject) => {
-		User.findOne({ user_id: id }, (err, Document) => {
+		User.findOne(where, (err, Document) => {
 
 			if (err) {
 
-				init(id)
+				init(where)
 					.then(user_document => resolve(user_document))
 					.catch(err => reject(err))
 
@@ -18,7 +18,7 @@ function find(id) {
 
 				} else {
 
-					init(id)
+					init(where)
 						.then(user_document => resolve(user_document))
 						.catch(err => reject('Não achei e não conseguir criar'))
 
@@ -30,9 +30,9 @@ function find(id) {
 	})
 }
 
-function init(id) {
+function init(where) {
 	return new Promise((resolve, reject) => {
-		User.create({ user_id: id }, (err, Document) => {
+		User.create(where, (err, Document) => {
 
 			if (err) {
 				// Não tentarei encontrar chamando a função 'find'
@@ -65,9 +65,9 @@ function init(id) {
 	})
 }
 
-function update({ id, data }) {
+function update({ where, data }) {
 	return new Promise((resolve, reject) => {
-		User.updateOne({ user_id: id }, data, (err, result) => {
+		User.updateOne(where, data, (err, result) => {
 
 			if (err) {
 

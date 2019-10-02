@@ -6,18 +6,11 @@ const user_document = new Schema({
 		required: true,
 		min: 1
 	},
-	friends: [Number],
 	posts: [Number],
 	notifications: [{
 		who: Number,
 		name: String,
 		msg: String,
-		image: String,
-		date: String
-	}],
-	invites: [{
-		who: Number,
-		name: String,
 		image: String,
 		date: String
 	}],
@@ -27,8 +20,7 @@ const user_document = new Schema({
 		msg: String,
 		image: String,
 		date: String
-	}],
-	solicitations: [Number]
+	}]
 }, {
 	timestamps: true
 })

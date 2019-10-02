@@ -2,6 +2,7 @@ require('dotenv').config()
 const { verify } = require('../../services/jwt')
 
 module.exports = (req, res, next) => {
+
 	try {
 
 		const token = req.headers.authorization
@@ -14,17 +15,17 @@ module.exports = (req, res, next) => {
 
 		const [bearer, hash] = token.split(' ')
 
-		verify(hash, res => {
-			if (res.status) {
-				req.payload = res.decoded
+		verify(hash, result => {
+			if (result.status) {
+				req.payload = result.decoded
 
 				next()
 			} else {
-				res.status(401).send(res.msg)		
+				res.status(401).send(result.msg)		
 			}
 		})
 
 	} catch(msg) {
-		res.status(401).send(msg)
+		res.status(401).send('primeiro catch')
 	}
 }

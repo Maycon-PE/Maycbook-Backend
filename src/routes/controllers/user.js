@@ -1,4 +1,7 @@
 const { genSaltSync, hashSync, compare } = require('bcryptjs')
+const sharp = require('sharp')
+const { existsSync, unlink } = require('fs')
+
 const { gerate } = require('../../services/jwt')
 
 const User_init = require('../../database/mongodb/inits/user_init')
@@ -23,6 +26,29 @@ module.exports = {
 
 			const user = { ...req.body }
 
+			const resizeImage = () => {
+				return new Promise((resolve, reject) => {
+					const { path, destination, filename } = req.file
+
+					sharp(path)
+						.resize(200, 200)
+						.jpeg({ quality: 100 })
+						.toFile(`${destination}/uploads/profiles/${filename}.jpg`)
+						.then(() => {
+
+							if (existsSync(path)) {
+								unlink(path, err => {
+									if (err) return reject(err)
+
+									resolve()
+								})
+							} else {
+								resolve()
+							}
+
+						}).catch(() => reject())
+				})
+			}
 
 			req
 				.mysql('user')
@@ -31,7 +57,6 @@ module.exports = {
 				.first()
 				.then(has => {
 					if (!has) {
-
 						if (user.password !== user.confirmPassword) throw 'Senhas diferentes!!'
 
 						if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(user.email)) throw 'Email inválido!!!'
@@ -50,36 +75,39 @@ module.exports = {
 							
 						delete user.confirmPassword
 
-						user.image = `profiles/default-${user.genre}.jpg`
+						user.image = `profiles/${req.file.filename}.jpg`
 
 						req
 							.mysql('user')
 							.insert(user)
 							.then(([ id ]) => {
-
-								User_init.init(id)
+								User_init.init({ user_id: id })
 									.then(user_document => {
-
-										Talk_init.init(id)
-											.then(talk_document => {
-
+										Talk_init.init({ user_id: id })
+											.then(async talk_document => {
 												delete user.password
 
-												const slice = {
-													['documents']: { 
-														user: user_document,
-														talk: talk_document
-													}, 
-													id, 
-													...user
-												}
+												resizeImage()
+													.then(() => {
 
-												gerate(slice)
-													.then(payload => {
-														res.status(201).json(payload)
-													}).catch(err => {
-														res.status(500).send(err)
-													})
+
+														const slice = {
+															['documents']: { 
+																user: user_document,
+																talk: talk_document
+															}, 
+															id, 
+															...user
+														}
+
+														gerate(slice)
+															.then(payload => {
+																res.status(201).json(payload)
+															}).catch(err => {
+																res.status(500).send(err)
+															})
+
+													}).catch(err => deleteUser(id, err))
 
 											}).catch(err => deleteUser(id, err))
 
@@ -121,10 +149,10 @@ module.exports = {
 						delete user.created_at
 						delete user.updated_at
 
-						User_init.find(user.id)
+						User_init.find({ user_id: user.id })
 							.then(user_document => {
 
-								Talk_init.find(user.id)
+								Talk_init.find({ user_id: user.id })
 									.then(talk_document => {
 
 										const slice = {
@@ -159,10 +187,10 @@ module.exports = {
 	},
 
 	reconnect(req, res) {
-		User_init.find(req.payload.id)
+		User_init.find({ user_id: req.payload.id })
 			.then(user_document => {
 
-				Talk_init.find(req.payload.id)
+				Talk_init.find({ user_id: req.payload.id })
 					.then(talk_document => {
 
 						delete req.payload.documents
@@ -204,7 +232,7 @@ module.exports = {
 				...req.body 
 			}
 
-			User_init.find(recipient)
+			User_init.find({ user_id: recipient })
 				.then(recipient_document => {
 
 					if (action === 'notifications') recipient_document[action].unshift(data)
@@ -220,11 +248,9 @@ module.exports = {
 								return tupla
 							})
 						} else recipient_document[action].unshift(data)
-					} else {
-						if (!recipient_document[action].find(add => add.who === data.who)) recipient_document[action].unshift(data)
 					}
 
-					User_init.update({ id: recipient, data: recipient_document })
+					User_init.update({ where: { user_id: recipient }, data: recipient_document })
 						.then(() => {
 
 							if (action === 'dialogues') {
@@ -233,27 +259,17 @@ module.exports = {
 									Talk_init.setMessage({ sended: +req.payload.id, name: req.payload.name, me: +req.payload.id, you: recipient, msg: data.msg }),
 									Talk_init.setMessage({ sended: +req.payload.id, name: req.payload.name, me: recipient, you: +req.payload.id, msg: data.msg })
 								]).then(() => {
-									const socket_recipient = req.sockets[`${recipient}`]
+									const socket_recipient = req.sockets[`${recipient}`].dashboard
 									if (socket_recipient !== 'offline') req.io.to(socket_recipient).emit('dialogues', data)
 								})
 								.catch(err => console.log(err))
 
-							} else if (action === 'invites') {
-								User_init.find(+req.payload.id)
-									.then(my_document => {
-									  !my_document.solicitations.includes(recipient) &&	my_document.solicitations.push(recipient)
+							} else if (action === 'notifications') {
 
-										User_init.update({ id: +req.payload.id, data: my_document })
-											.then(() => {
-												const socket_recipient = req.sockets[`${recipient}`]
-												if (socket_recipient !== 'offline') req.io.to(socket_recipient).emit('invites', data)
-											})
-											.catch(err => console.log(err))
-
-									}).catch(err => console.log(err))
-							} else {
-								const socket_recipient = req.sockets[`${recipient}`]
+								const socket_recipient = req.sockets[`${recipient}`].dashboard
+								console.log('socket_recipient ', socket_recipient)
 								if (socket_recipient !== 'offline') req.io.to(socket_recipient).emit('notifications', data)
+
 							}
 
 							res.status(200).json(data.msg)

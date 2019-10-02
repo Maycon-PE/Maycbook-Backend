@@ -53,9 +53,9 @@ function init() {
 	})
 }
 
-function update({ _id, data }) {
+function update({ where, data }) {
 	return new Promise((resolve, reject) => {
-		Sockets.updateOne({ _id }, data, (err, result) => {
+		Sockets.updateOne(where, data, (err, result) => {
 
 			if (err) {
 
@@ -86,7 +86,7 @@ function getin(data) {
 
 				socket_document.data[data.user_id] = data.socket_id
 
-				update({ _id: socket_document._id, data: socket_document })
+				update({ where: { _id: socket_document._id }, data: socket_document })
 					.then(() => resolve())
 					.catch(err => reject(err))
 
@@ -105,7 +105,7 @@ function getout(value) {
 					}
 				})
 
-				update({ _id: socket_document._id, data: socket_document })
+				update({ where: { _id: socket_document._id }, data: socket_document })
 					.then(() => resolve())
 					.catch(err => reject(err))
 

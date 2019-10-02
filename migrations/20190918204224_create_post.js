@@ -16,6 +16,14 @@ exports.up = function(knex) {
         .string('content', 300)
         .notNull()
 
+      table
+        .string('author')
+        .notNull()
+
+      table
+        .string('author_image')  
+        .notNull()
+
       // table
       //   .integer('likes')  
       //   .unsigned()

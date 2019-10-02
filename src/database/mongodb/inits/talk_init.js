@@ -1,12 +1,12 @@
 const Talk = require('../Schemas/talk_document')
 
-function find(id) {
+function find(where) {
 	return new Promise((resolve, reject) => {
-		Talk.findOne({ user_id: id }, (err, Document) => {
+		Talk.findOne(where, (err, Document) => {
 
 			if (err) {
 
-				init(id)
+				init(where)
 					.then(talk_document => resolve(talk_document))
 					.catch(err => reject(err))
 
@@ -18,7 +18,7 @@ function find(id) {
 
 				} else {
 
-					init(id)
+					init(where)
 						.then(talk_document => resolve(talk_document))
 						.catch(err => reject('Não achei e não conseguir criar'))
 
@@ -30,9 +30,9 @@ function find(id) {
 	})
 }
 
-function init(id) {
+function init(where) {
 	return new Promise((resolve, reject) => {
-		Talk.create({ user_id: id }, (err, Document) => {
+		Talk.create(where, (err, Document) => {
 
 			if (err) {
 				// Não tentarei encontrar chamando a função 'find'
@@ -65,9 +65,9 @@ function init(id) {
 	})
 }
 
-function update({ id, data }) {
+function update({ where, data }) {
 	return new Promise((resolve, reject) => {
-		Talk.updateOne({ user_id: id }, data, (err, result) => {
+		Talk.updateOne(where, data, (err, result) => {
 
 			if (err) {
 
@@ -101,7 +101,7 @@ function update({ id, data }) {
 
 function setMessage({ sended, name, me, you, msg }) {
 	return new Promise((resolve, reject) => {
-		find(me)
+		find({ user_id: me })
 			.then(my_document => {
 				const previusPrivate = my_document.private.filter(({ who_id }) => who_id === you)
 
@@ -128,7 +128,7 @@ function setMessage({ sended, name, me, you, msg }) {
 					})
 				}
 				
-				update({ id: me, data: my_document })
+				update({ where: { user_id: me }, data: my_document })
 					.then(() => {
 						resolve()
 					}).catch(err => reject(err))

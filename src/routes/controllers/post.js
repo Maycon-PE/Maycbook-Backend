@@ -8,19 +8,80 @@ module.exports = {
 
 	index(req, res) {
 
-		console.log(req.query)
+		try {
 
-		const by_id = req.query._id
+			const limit = 5
 
-		if (by_id) {
-			res.send('Por _id')
-		} else {
-			res.send('Por who e date')
+			function delImage(paths) {
+				paths.forEach((path, index) => {
+					if (existsSync) {
+						unlink(`src/static/uploads/${path}`, err => {
+							console.log('path ', path)
+						})
+					}
+				})
+			}
+
+			function doClear({ posts, documents }) {
+
+				let ids = posts.filter(({ id }) => !documents.find(({ post_id }) => post_id === id ))
+
+				const paths = ids.map(({ path }) => path)
+				delImage(paths)
+				ids = ids.map(({ id }) => id)
+
+				req
+					.mysql('post')
+					.del()
+					.whereIn('id', ids)
+					.then(() => {
+						const my_socket = req.sockets[`${req.payload.id}`].dashboard
+
+						if (my_socket) req.io.to(my_socket).emit('posts_deleted', ids)
+					})
+					.catch(() => {
+						req.mysql.migrate.rollback()
+					})
+					.finally(() => doSearch())
+
+			}
+
+			function doSearch() {
+
+				req
+				.mysql('post')
+				.then(posts => {
+
+					posts = posts.reverse()
+
+					const ids = posts.map(({ id }) => id)
+
+					Post_int.aggregate([{ $match: { post_id: { $in: ids } } }])
+						.then(Documents => {
+							if (posts.length !== Documents.length) {
+								console.log('inconcistência')
+
+								doClear({ posts, documents: Documents })
+
+							} else {
+								res.status(200).json({ posts, stats: Documents })
+							}
+						}).catch(err => res.status(500).send(err))
+
+				}).catch(err => res.status(500).send(err))
+
+			}
+
+			doSearch()
+	
+		} catch(err) {
+			res.status(500).send(err)
 		}
 
 	},
 
 	store(req, res) {
+
 		try {
 
 			if (!Object.values(req.body).length) throw 'Nenhum dado'
@@ -62,17 +123,20 @@ module.exports = {
 			const saveData = () => {
 				return new Promise((resolve, reject) => {
 
-					Post_int.init(req.payload.id)
+					Post_int.init({ user_id: +req.payload.id })
 						.then(Document => {
 
 								const post = {
 									content: text,
 									user_id: +req.payload.id,
+									author: req.payload.name,
+									author_image: req.payload.image,
 									stats: `${Document._id}`,
 									path: `posts/${filename}.jpg`
 								}
 
-								req.mysql('post')
+								req
+									.mysql('post')
 									.insert(post)
 									.then(([ id ]) => {
 
@@ -84,7 +148,7 @@ module.exports = {
 
 										const date = new Date()
 
-										const date_formated = `${ date.getDate() < 10 ? '0' + date.getDate() : date.getDate() }/${ date.getMonth() +  1 < 10 ? '0' + (date.getMonth() +  1) : date.getMonth() }/${ date.getFullYear() }-${ date.getHours() < 10 ? '0' + date.getHours() : date.getHours() }:${ date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes() }:${ date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds() }`
+										const date_formated = `${ date.getDate() < 10 ? `0${date.getDate()}` : date.getDate() }/${ date.getMonth() +  1 < 10 ? `0${date.getMonth() +  1}` : date.getMonth() + 1 }/${ date.getFullYear() }-${ date.getHours() < 10 ? `0${date.getHours()}` : date.getHours() }:${ date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes() }:${ date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds() }`
 
 										const post_document = {
 											...Document,
@@ -92,21 +156,18 @@ module.exports = {
 											date: date_formated
 										}
 
-										Post_int.update({ _id, data: post_document })
+										Post_int.update({ where: { _id }, data: post_document })
 											.then(() => {
 
-												User_int.find(+req.payload.id)
+												User_int.find({ user_id: +req.payload.id })
 													.then(user_document => {
 
 														delete user_document._doc._id
 														delete user_document._doc.__v
 
-														const newUser_document = {
-															...user_document._doc,
-															posts: user_document._doc.posts.unshift(id)
-														}
+														user_document._doc.posts.unshift(id)
 
-														User_int.update({ id: +req.payload.id, data: newUser_document })
+														User_int.update({ where: { user_id: +req.payload.id }, data: user_document._doc })
 															.then(() => resolve())
 															.catch(err => reject(err))
 
@@ -125,13 +186,78 @@ module.exports = {
 				.then(() => {
 
 					saveData()
-						.then(() => res.status(201).send())
-						.catch(err => res.status(500).send(err))
+						.then(() => {
+							req.io.emit('new_post')
+
+							res.status(201).send()
+						}).catch(err => res.status(500).send(err))
 
 				}).catch(err => res.status(500).send(err))
 
 		} catch(err) {
 			res.status(400).send(err)
+		}
+
+	},
+
+	actions(req, res) {
+
+		try {
+
+			const action = req.params.action
+			const _id = req.params.post_id
+
+			const data = {
+				who: +req.payload.id,
+				name: req.payload.name,
+				image: req.payload.image
+			}
+
+			switch(action) {
+				case 'like':
+					Post_int.find({ _id })
+						.then(Document => {
+
+							if (!Document.data.rate.likes.find(({ who }) => who === data.who)) {
+								Document.data.rate.likes.unshift(data)
+
+								Post_int.update({ where: { _id }, data: Document })
+									.then(() => {
+
+										const likes = Document.data.rate.likes
+
+										res.status(201).json(likes)
+
+									}).catch(err => res.status(500).send(err))
+							} else {
+								Document.data.rate.likes = Document.data.rate.likes.filter(({ who }) => who !== data.who)
+
+								const likes = Document.data.rate.likes
+
+								Post_int.update({ where: { _id }, data: Document })
+									.then(() => {
+
+										const likes = Document.data.rate.likes
+
+										res.status(201).json(likes)
+
+									}).catch(err => res.status(500).send(err))
+
+							}
+
+						}).catch(err => res.status(400).send(err))
+
+					break;
+
+				case 'comment':
+					return res.send('comment')
+
+				default:
+					res.status(400).send('Ação não reconhecida')	
+			}
+
+		} catch(err) {
+			res.status(500).send(err)
 		}
 
 	}

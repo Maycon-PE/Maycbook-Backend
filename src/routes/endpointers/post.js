@@ -4,15 +4,18 @@ const routes = require('express').Router()
 const user = require('../controllers/user')
 const post = require('../controllers/post')
 
-const storage = require('../../services/multer')
+const { up_post, up_user } = require('../../services/multer')
 
-const upload = multer({ storage })
+const upload_post = multer({ storage: up_post })
+
+const upload_user = multer({ storage: up_user })
 
 routes
-	.post('/user', user.store)
+	.post('/user', upload_user.single('image'), user.store)
 	.post('/login', user.login)
 	.post('/auth/reconnect', user.reconnect)
-	.post('/auth/action/:recipient/:action', user.actions)
-	.post('/auth/post', upload.single('image'), post.store)
+	.post('/auth/user/:recipient/:action', user.actions)
+	.post('/auth/post', upload_post.single('image'), post.store)
+	.post('/auth/post/:action/:post_id', post.actions)
 
 module.exports = app => app.use(routes)

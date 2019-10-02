@@ -12,6 +12,8 @@ const talk_document = new Schema({
 			required: true,
 			min: 1
 		},
+		name: String,
+		image: String,
 		initio: String,
 		data: [{
 			id: {

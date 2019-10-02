@@ -2,9 +2,12 @@ require('dotenv').config()
 const bodyParser = require('body-parser')
 const cors = require('cors')
 
-const app = require('express')()
+const express = require('express')
+
+const app = express()
 app.use(cors())
 app.use(bodyParser.json())
+app.use('/files', express.static('src/static'))
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
 
@@ -22,24 +25,23 @@ const sockets = {}
 
 io.on('connection', socket => {
 	const user_id = socket.handshake.query.user_id
+	const mode = socket.handshake.query.mode
 	const socket_id = socket.id
 
 	Socket_init.getin({ user_id, socket_id })
 		.then(() => {
-			sockets[user_id] = socket_id
+			sockets[user_id] = { ...sockets[user_id], [mode]: socket_id }
 			console.log('registrado', sockets)
 		}).catch(err => console.log(err))
 
 		socket.on('disconnect', () => {
 			Socket_init.getout(socket.id)
 				.then(() => {
-					sockets[user_id] = 'offline'
+					sockets[user_id] = {}
 					console.log('deletado do mongo', sockets)
 				}).catch(err => console.log(err))
 		})
 })
-
-app.use(require('express').static('../static'))
 
 app.use((req, res, next) => {
 	req.mysql = db
