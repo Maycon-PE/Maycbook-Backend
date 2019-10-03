@@ -15,8 +15,10 @@ Rotas com o prefixo `/auth` passará por um middleware que verifica a validade d
 	- `/user` - Cria um usuário e inicia uma seção;
 	- `/login` - Inicia uma seção;
 	- `/auth/reconnect` - Reconnecta o usuário;
-	- `/auth/action/:recipient/:action` - Executa uma ação de notificação.
+	- `/auth/user/:recipient/:action` - Executa uma ação de notificação;
+	- `/auth/post` - Cria uma publicação;
+	- `/auth/post/:action/:post_id` - Cria um comentário ou uma curtida em alguma publicação.
 
 - GET
-	- `/auth/post` - Faz uma busca por uma publicação.	
+	- `/auth/post?:page` - Faz uma busca por uma publicação.	
 	

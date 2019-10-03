@@ -11,6 +11,7 @@ module.exports = {
 		try {
 
 			const limit = 5
+			const page = +req.query.page || 1
 
 			function delImage(paths) {
 				paths.forEach((path, index) => {
@@ -48,8 +49,11 @@ module.exports = {
 
 			function doSearch() {
 
+
 				req
 				.mysql('post')
+				.limit(limit)
+				.offset((limit * page) - limit)
 				.then(posts => {
 
 					posts = posts.reverse()
@@ -57,14 +61,20 @@ module.exports = {
 					const ids = posts.map(({ id }) => id)
 
 					Post_int.aggregate([{ $match: { post_id: { $in: ids } } }])
-						.then(Documents => {
+						.then( async Documents => {
 							if (posts.length !== Documents.length) {
-								console.log('inconcistência')
+								console.log('inconsistência')
 
 								doClear({ posts, documents: Documents })
 
 							} else {
-								res.status(200).json({ posts, stats: Documents })
+								const result = await req.mysql('user')
+									.count('id')
+									.first()
+
+								const count = Object.values(result)[0]
+
+								res.status(200).json({ data: { posts, stats: Documents }, pagination: { limit, count } })
 							}
 						}).catch(err => res.status(500).send(err))
 
@@ -100,7 +110,7 @@ module.exports = {
 				return new Promise((resolve, reject) => {
 
 					sharp(path)
-						.resize(350, 350)
+						.resize(450, 450)
 						.jpeg({ quality: 100 })
 						.toFile(`${destination}/uploads/posts/${filename}.jpg`)
 						.then(async info => {
@@ -148,7 +158,7 @@ module.exports = {
 
 										const date = new Date()
 
-										const date_formated = `${ date.getDate() < 10 ? `0${date.getDate()}` : date.getDate() }/${ date.getMonth() +  1 < 10 ? `0${date.getMonth() +  1}` : date.getMonth() + 1 }/${ date.getFullYear() }-${ date.getHours() < 10 ? `0${date.getHours()}` : date.getHours() }:${ date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes() }:${ date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds() }`
+										const date_formated = `${ date.getDate() < 10 ? `0${date.getDate()}` : date.getDate() }/${ date.getMonth() +  1 < 10 ? `0${date.getMonth() +  1}` : date.getMonth() + 1 }/${ date.getFullYear() } - ${ date.getHours() < 10 ? `0${date.getHours()}` : date.getHours() }:${ date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes() }:${ date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds() }`
 
 										const post_document = {
 											...Document,
@@ -207,10 +217,15 @@ module.exports = {
 			const action = req.params.action
 			const _id = req.params.post_id
 
+			const date = new Date()
+
+			const date_formated = `${ date.getDate() < 10 ? `0${date.getDate()}` : date.getDate() }/${ date.getMonth() +  1 < 10 ? `0${date.getMonth() +  1}` : date.getMonth() + 1 }/${ date.getFullYear() } - ${ date.getHours() < 10 ? `0${date.getHours()}` : date.getHours() }:${ date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes() }:${ date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds() }`
+
 			const data = {
 				who: +req.payload.id,
 				name: req.payload.name,
-				image: req.payload.image
+				image: req.payload.image,
+				date: date_formated
 			}
 
 			switch(action) {
@@ -223,6 +238,12 @@ module.exports = {
 
 								Post_int.update({ where: { _id }, data: Document })
 									.then(() => {
+
+										const direct = req.sockets[`${Document.user_id}`].dashboard
+										const target = req.sockets[`${req.payload.id}`].dashboard
+
+										target !== direct && direct && req.io.to(direct).emit('liked', data)
+										req.io.emit('new_likes', { who: data.who, at: Document._id })
 
 										const likes = Document.data.rate.likes
 
@@ -250,7 +271,31 @@ module.exports = {
 					break;
 
 				case 'comment':
-					return res.send('comment')
+
+					data.msg = req.body.msg
+
+					Post_int.find({ _id })
+						.then(Document => {
+							Document.data.comments.unshift(data)
+
+							Post_int.update({ where: { _id }, data: Document })
+								.then(() => {
+
+									const direct = req.sockets[`${Document.user_id}`].dashboard
+									const target = req.sockets[`${req.payload.id}`].dashboard
+
+									target !== direct && direct && req.io.to(direct).emit('commented', data)
+
+									req.io.emit('new_comments', { who: data.who, at: Document._id })
+
+									const comments = Document.data.comments
+
+									res.status(201).json(comments)
+								}).catch(err => res.status(500).send(err))
+
+						}).catch(err => res.status(400).send(err))
+
+					break;
 
 				default:
 					res.status(400).send('Ação não reconhecida')	
