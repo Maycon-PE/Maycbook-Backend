@@ -36,7 +36,7 @@ module.exports = {
 					.del()
 					.whereIn('id', ids)
 					.then(() => {
-						const my_socket = req.sockets[`${req.payload.id}`].dashboard
+						const my_socket = req.sockets[`${req.payload.id}`]
 
 						if (my_socket) req.io.to(my_socket).emit('posts_deleted', ids)
 					})
@@ -239,11 +239,18 @@ module.exports = {
 								Post_int.update({ where: { _id }, data: Document })
 									.then(() => {
 
-										const direct = req.sockets[`${Document.user_id}`].dashboard
-										const target = req.sockets[`${req.payload.id}`].dashboard
+										const direct = req.sockets[`${Document.user_id}`]
+										const target = req.sockets[`${data.who}`]
 
 										target !== direct && direct && req.io.to(direct).emit('liked', data)
-										req.io.emit('new_likes', { who: data.who, at: Document._id })
+
+										const emition = {
+											who: data.who, 
+											at: Document.post_id, 
+											data: Document.data.rate.likes
+										}
+
+										req.io.emit('change_like', emition)
 
 										const likes = Document.data.rate.likes
 
@@ -257,6 +264,19 @@ module.exports = {
 
 								Post_int.update({ where: { _id }, data: Document })
 									.then(() => {
+
+										const direct = req.sockets[`${Document.user_id}`]
+										const target = req.sockets[`${data.who}`]
+
+										target !== direct && direct && req.io.to(direct).emit('disliked', data)
+
+										const emition = {
+											who: data.who, 
+											at: Document.post_id, 
+											data: Document.data.rate.likes
+										}
+
+										req.io.emit('change_like', emition)
 
 										const likes = Document.data.rate.likes
 
@@ -281,12 +301,18 @@ module.exports = {
 							Post_int.update({ where: { _id }, data: Document })
 								.then(() => {
 
-									const direct = req.sockets[`${Document.user_id}`].dashboard
-									const target = req.sockets[`${req.payload.id}`].dashboard
+									const direct = req.sockets[`${Document.user_id}`]
+									const target = req.sockets[`${data.who}`]
 
 									target !== direct && direct && req.io.to(direct).emit('commented', data)
 
-									req.io.emit('new_comments', { who: data.who, at: Document._id })
+									const emition = {
+										who: data.who,
+										at: Document.post_id,
+										data: Document.data.comments
+									}
+
+									req.io.emit('new_comments', emition)
 
 									const comments = Document.data.comments
 
