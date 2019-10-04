@@ -10,8 +10,9 @@ module.exports = {
 
 		try {
 
-			const limit = 5
-			const page = +req.query.page || 1
+			const limit = 3
+			const page = +req.query.page
+			console.log('page ', page)
 
 			function delImage(paths) {
 				paths.forEach((path, index) => {
@@ -53,9 +54,8 @@ module.exports = {
 				req
 				.mysql('post')
 				.limit(limit)
-				.offset((limit * page) - limit)
+				.offset(page)
 				.then(posts => {
-
 					posts = posts.reverse()
 
 					const ids = posts.map(({ id }) => id)
@@ -68,7 +68,7 @@ module.exports = {
 								doClear({ posts, documents: Documents })
 
 							} else {
-								const result = await req.mysql('user')
+								const result = await req.mysql('post')
 									.count('id')
 									.first()
 
@@ -178,8 +178,17 @@ module.exports = {
 														user_document._doc.posts.unshift(id)
 
 														User_int.update({ where: { user_id: +req.payload.id }, data: user_document._doc })
-															.then(() => resolve())
-															.catch(err => reject(err))
+															.then(() => {
+																const data = {
+																	name: req.payload.name,
+																	image: req.payload.image,
+																	who: +req.payload.id,
+																	path: post.path
+																}
+
+																req.io.emit('requests', data)
+																resolve()
+															}).catch(err => reject(err))
 
 													}).catch(err => reject(err))
 
@@ -197,8 +206,6 @@ module.exports = {
 
 					saveData()
 						.then(() => {
-							req.io.emit('new_post')
-
 							res.status(201).send()
 						}).catch(err => res.status(500).send(err))
 
@@ -216,7 +223,8 @@ module.exports = {
 
 			const action = req.params.action
 			const _id = req.params.post_id
-
+			const where = +req.params.where
+			
 			const date = new Date()
 
 			const date_formated = `${ date.getDate() < 10 ? `0${date.getDate()}` : date.getDate() }/${ date.getMonth() +  1 < 10 ? `0${date.getMonth() +  1}` : date.getMonth() + 1 }/${ date.getFullYear() } - ${ date.getHours() < 10 ? `0${date.getHours()}` : date.getHours() }:${ date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes() }:${ date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds() }`
@@ -238,19 +246,20 @@ module.exports = {
 
 								Post_int.update({ where: { _id }, data: Document })
 									.then(() => {
+										data.mode = 'like'
 
 										const direct = req.sockets[`${Document.user_id}`]
 										const target = req.sockets[`${data.who}`]
 
-										target !== direct && direct && req.io.to(direct).emit('liked', data)
-
-										const emition = {
-											who: data.who, 
-											at: Document.post_id, 
-											data: Document.data.rate.likes
+										if (target !== direct) {
+											if (direct) {
+												req.io.to(direct).emit('liked', data)
+											} else {
+												console.log('salvando curtida no banco ', data)
+											}
 										}
 
-										req.io.emit('change_like', emition)
+										req.io.emit('requests', where)
 
 										const likes = Document.data.rate.likes
 
@@ -264,19 +273,20 @@ module.exports = {
 
 								Post_int.update({ where: { _id }, data: Document })
 									.then(() => {
+										data.mode = 'dislike'
 
 										const direct = req.sockets[`${Document.user_id}`]
 										const target = req.sockets[`${data.who}`]
 
-										target !== direct && direct && req.io.to(direct).emit('disliked', data)
-
-										const emition = {
-											who: data.who, 
-											at: Document.post_id, 
-											data: Document.data.rate.likes
+										if (target !== direct) {
+											if (direct) {
+												req.io.to(direct).emit('disliked', data)
+											} else {
+												console.log('salvando descurtida no banco ', data)
+											}
 										}
 
-										req.io.emit('change_like', emition)
+										req.io.emit('requests', where)
 
 										const likes = Document.data.rate.likes
 
@@ -286,7 +296,9 @@ module.exports = {
 
 							}
 
-						}).catch(err => res.status(400).send(err))
+						}).catch(err => {
+							res.status(400).send(err)
+						})
 
 					break;
 
@@ -300,19 +312,20 @@ module.exports = {
 
 							Post_int.update({ where: { _id }, data: Document })
 								.then(() => {
+									data.mode = 'comment'
 
 									const direct = req.sockets[`${Document.user_id}`]
 									const target = req.sockets[`${data.who}`]
 
-									target !== direct && direct && req.io.to(direct).emit('commented', data)
-
-									const emition = {
-										who: data.who,
-										at: Document.post_id,
-										data: Document.data.comments
+									if (target !== direct) {
+										if (direct) {
+											req.io.to(direct).emit('commented', data)
+										} else {
+											console.log('salvando comentario no banco ', data)
+										}
 									}
 
-									req.io.emit('new_comments', emition)
+									req.io.emit('requests', where)
 
 									const comments = Document.data.comments
 

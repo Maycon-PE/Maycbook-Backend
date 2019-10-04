@@ -16,6 +16,6 @@ routes
 	.post('/auth/reconnect', user.reconnect)
 	.post('/auth/user/:recipient/:action', user.actions)
 	.post('/auth/post', upload_post.single('image'), post.store)
-	.post('/auth/post/:action/:post_id', post.actions)
+	.post('/auth/post/:action/:post_id/:where', post.actions)
 
 module.exports = app => app.use(routes)

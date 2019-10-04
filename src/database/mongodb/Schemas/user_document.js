@@ -8,6 +8,7 @@ const user_document = new Schema({
 	},
 	posts: [Number],
 	notifications: [{
+		mode: String,
 		who: Number,
 		name: String,
 		msg: String,
