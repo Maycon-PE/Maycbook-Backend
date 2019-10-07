@@ -12,7 +12,6 @@ module.exports = {
 
 			const limit = 3
 			const page = +req.query.page
-			console.log('page ', page)
 
 			function delImage(paths) {
 				paths.forEach((path, index) => {
@@ -233,64 +232,101 @@ module.exports = {
 				who: +req.payload.id,
 				name: req.payload.name,
 				image: req.payload.image,
-				date: date_formated
+				date: date_formated,
+				post_id: _id
+			}
+
+			const emitOrError = ({ data, direct_id, target_id }) => {
+				return new Promise((resolve, reject) => {
+
+					const direct = req.sockets[`${direct_id}`]
+					const target = req.sockets[`${target_id}`]
+
+					if (target !== direct) {
+						if (direct) {
+							req.io.to(direct).emit('actions', data)
+							resolve()
+						} else {
+							reject()
+						}
+					} else {
+						resolve()
+					}
+				})
+			}
+
+			const saveOrError = ({ user_id, data }) => {
+				return new Promise((resolve, reject) => {
+					User_int.find({ user_id })
+						.then(user_document => {
+
+							user_document.notifications.unshift(data)
+
+							User_int.update({ where: { _id: user_document._id }, data: user_document })
+								.then(() => {
+
+									resolve(user_document.notifications[0])
+
+								}).catch(err => reject(err))
+
+						}).catch(err => reject(err))
+				})
 			}
 
 			switch(action) {
 				case 'like':
 					Post_int.find({ _id })
-						.then(Document => {
+						.then(post_document => {
 
-							if (!Document.data.rate.likes.find(({ who }) => who === data.who)) {
-								Document.data.rate.likes.unshift(data)
+							const likes = post_document.data.rate.likes
 
-								Post_int.update({ where: { _id }, data: Document })
+							if (!post_document.data.rate.likes.find(({ who }) => who === data.who)) {
+
+								post_document.data.rate.likes.unshift(data)
+								
+								Post_int.update({ where: { _id }, data: post_document })
 									.then(() => {
 										data.mode = 'like'
 
-										const direct = req.sockets[`${Document.user_id}`]
-										const target = req.sockets[`${data.who}`]
+										 if (+req.payload.id !== post_document.user_id)	{
+										 	saveOrError({ user_id: post_document.user_id, data })
+												.then(last_document => {
 
-										if (target !== direct) {
-											if (direct) {
-												req.io.to(direct).emit('liked', data)
-											} else {
-												console.log('salvando curtida no banco ', data)
-											}
+													emitOrError({ target_id: data.who, direct_id: post_document.user_id, data: last_document })
+														.finally(() => {
+															req.io.emit('requests', where)
+															res.status(201).json(likes)
+														})
+
+												}).catch(err => {
+													res.status(500).send(err)
+												})
+										} else {
+											req.io.emit('requests', where)
+											res.status(201).json(likes)
 										}
 
-										req.io.emit('requests', where)
-
-										const likes = Document.data.rate.likes
-
-										res.status(201).json(likes)
-
 									}).catch(err => res.status(500).send(err))
+
 							} else {
-								Document.data.rate.likes = Document.data.rate.likes.filter(({ who }) => who !== data.who)
+								post_document.data.rate.likes = post_document.data.rate.likes.filter(({ who }) => who !== data.who)
 
-								const likes = Document.data.rate.likes
-
-								Post_int.update({ where: { _id }, data: Document })
+								Post_int.update({ where: { _id }, data: post_document })
 									.then(() => {
 										data.mode = 'dislike'
 
-										const direct = req.sockets[`${Document.user_id}`]
-										const target = req.sockets[`${data.who}`]
+											saveOrError({ user_id: post_document.user_id, data })
+												.then(data => {
 
-										if (target !== direct) {
-											if (direct) {
-												req.io.to(direct).emit('disliked', data)
-											} else {
-												console.log('salvando descurtida no banco ', data)
-											}
-										}
+													emitOrError({ target_id: data.who, direct_id: post_document.user_id, data })
+														.finally(() => {
+															req.io.emit('requests', where)
+															res.status(201).json(likes)
+														})
 
-										req.io.emit('requests', where)
-
-										const likes = Document.data.rate.likes
-
-										res.status(201).json(likes)
+												}).catch(err => {
+													res.status(500).send(err)
+												})
 
 									}).catch(err => res.status(500).send(err))
 
@@ -307,29 +343,27 @@ module.exports = {
 					data.msg = req.body.msg
 
 					Post_int.find({ _id })
-						.then(Document => {
-							Document.data.comments.unshift(data)
+						.then(post_document => {
+							post_document.data.comments.unshift(data)
 
-							Post_int.update({ where: { _id }, data: Document })
+							Post_int.update({ where: { _id }, data: post_document })
 								.then(() => {
 									data.mode = 'comment'
+									const comments = post_document.data.comments
 
-									const direct = req.sockets[`${Document.user_id}`]
-									const target = req.sockets[`${data.who}`]
+										saveOrError({ user_id: post_document.user_id, data })
+											.then(data => {
 
-									if (target !== direct) {
-										if (direct) {
-											req.io.to(direct).emit('commented', data)
-										} else {
-											console.log('salvando comentario no banco ', data)
-										}
-									}
+												emitOrError({ target_id: data.who, direct_id: post_document.user_id, data })
+													.finally(() => {
+														req.io.emit('requests', where)
+														res.status(201).json(comments)
+													})
 
-									req.io.emit('requests', where)
+											}).catch(err => {
+												res.status(500).send(err)
+											})
 
-									const comments = Document.data.comments
-
-									res.status(201).json(comments)
 								}).catch(err => res.status(500).send(err))
 
 						}).catch(err => res.status(400).send(err))

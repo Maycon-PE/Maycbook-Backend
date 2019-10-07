@@ -10,6 +10,50 @@ const Talk_init = require('../../database/mongodb/inits/talk_init')
 
 module.exports = {
 
+		notifications(req, res) {
+
+			try {
+
+				const selectField = field => {
+					return new Promise((resolve, reject) => {
+						User_init.find({ user_id: +req.payload.id })
+							.then(user_document => {
+								const iWant = user_document[field]
+
+								resolve(iWant)
+
+							}).catch(err => {
+								reject(err)
+							})	
+					})
+				}
+
+				const mode = req.params.mode
+
+				if (mode === 'notifications') {
+
+					selectField('notifications')
+						.then(result => {
+							res.status(200).json(result)
+						}).catch(err => res.status(500).send(err))
+
+				} else if (mode === 'dialogues') {
+
+					selectField('dialogues')
+						.then(result => {
+							res.status(200).json(result)
+						}).catch(err => res.status(500).send(err))
+
+				} else {
+					res.status(400).send('O que você quer, não é esperado')
+				}
+
+			} catch(e) {
+				res.status(500).send(e)
+			}
+
+		},
+
 		store(req, res) {
 
 			try {
@@ -259,16 +303,19 @@ module.exports = {
 									Talk_init.setMessage({ sended: +req.payload.id, name: req.payload.name, me: +req.payload.id, you: recipient, msg: data.msg }),
 									Talk_init.setMessage({ sended: +req.payload.id, name: req.payload.name, me: recipient, you: +req.payload.id, msg: data.msg })
 								]).then(() => {
-									const socket_recipient = req.sockets[`${recipient}`].dashboard
-									if (socket_recipient !== 'offline') req.io.to(socket_recipient).emit('dialogues', data)
+									const socket_recipient = req.sockets[`${recipient}`]
+									if (socket_recipient) {
+										req.io.to(socket_recipient).emit('dialogues', data)
+									}
 								})
 								.catch(err => console.log(err))
 
 							} else if (action === 'notifications') {
 
-								const socket_recipient = req.sockets[`${recipient}`].dashboard
-								console.log('socket_recipient ', socket_recipient)
-								if (socket_recipient !== 'offline') req.io.to(socket_recipient).emit('notifications', data)
+								const socket_recipient = req.sockets[`${recipient}`]
+								if (socket_recipient) {
+									req.io.to(socket_recipient).emit('notifications', data)
+								}
 
 							}
 

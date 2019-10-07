@@ -13,7 +13,8 @@ const user_document = new Schema({
 		name: String,
 		msg: String,
 		image: String,
-		date: String
+		date: String,
+		post_id: Schema.Types.ObjectId
 	}],
 	dialogues: [{
 		who: Number,
