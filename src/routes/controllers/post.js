@@ -109,7 +109,7 @@ module.exports = {
 				return new Promise((resolve, reject) => {
 
 					sharp(path)
-						.resize(450, 450)
+						// .resize(450, 450)
 						.jpeg({ quality: 100 })
 						.toFile(`${destination}/uploads/posts/${filename}.jpg`)
 						.then(async info => {
@@ -185,7 +185,7 @@ module.exports = {
 																	path: post.path
 																}
 
-																req.io.emit('requests', data)
+																req.io.emit('new_post', data)
 																resolve()
 															}).catch(err => reject(err))
 
@@ -294,7 +294,6 @@ module.exports = {
 
 													emitOrError({ target_id: data.who, direct_id: post_document.user_id, data: last_document })
 														.finally(() => {
-															req.io.emit('requests', where)
 															res.status(201).json(likes)
 														})
 
@@ -302,7 +301,6 @@ module.exports = {
 													res.status(500).send(err)
 												})
 										} else {
-											req.io.emit('requests', where)
 											res.status(201).json(likes)
 										}
 
@@ -320,7 +318,6 @@ module.exports = {
 
 													emitOrError({ target_id: data.who, direct_id: post_document.user_id, data })
 														.finally(() => {
-															req.io.emit('requests', where)
 															res.status(201).json(likes)
 														})
 
@@ -356,7 +353,6 @@ module.exports = {
 
 												emitOrError({ target_id: data.who, direct_id: post_document.user_id, data })
 													.finally(() => {
-														req.io.emit('requests', where)
 														res.status(201).json(comments)
 													})
 
@@ -376,6 +372,57 @@ module.exports = {
 
 		} catch(err) {
 			res.status(500).send(err)
+		}
+
+	},
+
+	comments(req, res) {
+
+		try {
+
+			const _id = req.params.id
+
+			Post_int.find({ _id })
+				.then(post_documents => {
+					const comments = post_documents.data.comments
+
+					res.status(200).json(comments)
+				}).catch(err => {
+					res.status(500).send(err)
+				})
+
+		} catch(e) {
+			res.status(500).send(e)
+		}
+
+	},
+
+	unique(req, res) {
+
+		try {
+
+			const _id = req.params.id
+
+			Post_int.find({ _id })
+				.then(({ _doc }) => {
+
+					req
+						.mysql('post')
+						.where({ id: _doc.post_id })
+						.first()
+						.then(post => {
+							
+							post.stats = _doc
+
+							res.status(200).json(post)
+						}).catch(err => {
+							res.status(500).send(err)
+						})
+
+				})
+
+		} catch(e) {
+			res.status(500).send(e)
 		}
 
 	}

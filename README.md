@@ -21,5 +21,6 @@ Rotas com o prefixo `/auth` passará por um middleware que verifica a validade d
 
 - GET
 	- `/auth/post?:page` - Faz uma busca por uma publicação;
+	- `/auth/post/:id/comments` - Retorna os comentários de uma publicação;
 	- `/auth/user/:mode` - Retorna as notificaões do usuário logado.
 	
