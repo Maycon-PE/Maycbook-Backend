@@ -7,6 +7,7 @@ const { gerate } = require('../../services/jwt')
 const User_init = require('../../database/mongodb/inits/user_init')
 const Post_init = require('../../database/mongodb/inits/post_init')
 const Talk_init = require('../../database/mongodb/inits/talk_init')
+const TalkAll_init = require('../../database/mongodb/inits/talkAll_init')
 
 module.exports = {
 
@@ -328,6 +329,40 @@ module.exports = {
 			res.status(500).send(err)
 		}
 
+	},
+
+	talk(req, res) {
+		try {
+			const data = {
+				who_id: +req.payload.id,
+				name: req.payload.name,
+				image: req.payload.image,
+				msg: req.body.msg
+			}
+
+			req.io.emit('talk_all', data)
+			res.status(200).send()
+
+			// TalkAll_init.findUnique()
+			// 	.then(talkAll_document => {
+
+			// 		talkAll_document.all.push(data)
+
+			// 		TalkAll_init.update({ where: { _id: talkAll_document._id }, data: talkAll_document })
+			// 			.then(() => {
+			// 				req.io.emit('talk_all', data)
+			// 				res.status(201).json(talkAll_document)
+			// 			}).catch(err => {
+			// 				res.status(400).send(err)
+			// 			})
+					
+			// 	}).catch(err => {
+			// 		res.status(500).send(err)
+			// 	})
+
+		} catch(e) {
+			res.status(500).send(e)
+		}
 	}
 
 }

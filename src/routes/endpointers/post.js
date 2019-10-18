@@ -14,6 +14,7 @@ routes
 	.post('/user', upload_user.single('image'), user.store)
 	.post('/login', user.login)
 	.post('/auth/reconnect', user.reconnect)
+	.post('/auth/talk', user.talk)
 	.post('/auth/user/:recipient/:action', user.actions)
 	.post('/auth/post', upload_post.single('image'), post.store)
 	.post('/auth/post/:action/:post_id/:where', post.actions)
