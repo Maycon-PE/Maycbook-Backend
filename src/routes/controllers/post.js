@@ -395,36 +395,6 @@ module.exports = {
 			res.status(500).send(e)
 		}
 
-	},
-
-	unique(req, res) {
-
-		try {
-
-			const _id = req.params.id
-
-			Post_int.find({ _id })
-				.then(({ _doc }) => {
-
-					req
-						.mysql('post')
-						.where({ id: _doc.post_id })
-						.first()
-						.then(post => {
-							
-							post.stats = _doc
-
-							res.status(200).json(post)
-						}).catch(err => {
-							res.status(500).send(err)
-						})
-
-				})
-
-		} catch(e) {
-			res.status(500).send(e)
-		}
-
 	}
 
 }

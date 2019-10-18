@@ -5,7 +5,6 @@ const user = require('../controllers/user')
 
 routes
 	.get('/auth/post?:page', post.index)
-	.get('/auth/post/:id', post.unique)
 	.get('/auth/post/:id/comments', post.comments)
 	.get('/auth/user/:mode', user.notifications)
 
