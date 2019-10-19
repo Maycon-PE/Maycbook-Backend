@@ -12,15 +12,11 @@ module.exports = app => {
 		res.send('rollback')
 	})
 
-	fs
+	try {
+		fs
 			.readdirSync(resolve(__dirname, 'endpointers'))
 			.forEach(file => require( resolve(__dirname, 'endpointers', file) )(app) )
-
-	// try {
-	// 	fs
-	// 		.readdirSync(resolve(__dirname, 'endpointers'))
-	// 		.forEach(file => require( resolve(__dirname, 'endpointers', file) )(app) )
-	// } catch(e) {
-	// 	console.log('\x1b[31m%s\x1b[0m', 'Nenhuma rota')
-	// }
+	} catch(e) {
+		console.log('\x1b[31m%s\x1b[0m', 'Nenhuma rota')
+	}
 }

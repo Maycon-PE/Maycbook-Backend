@@ -26,6 +26,6 @@ module.exports = (req, res, next) => {
 		})
 
 	} catch(msg) {
-		res.status(401).send('primeiro catch')
+		res.status(401).send(msg)
 	}
 }

@@ -1,19 +1,19 @@
 require('dotenv').config()
 const bodyParser = require('body-parser')
 const cors = require('cors')
-
 const express = require('express')
 
 const app = express()
 app.use(cors())
 app.use(bodyParser.json())
 app.use('/files', express.static('src/static'))
+
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
 
 const config = require('../../knexfile')
 
-const port = process.env.PORT || 8080
+const port = process.env.PORT || 8888
 
 require('../database/mongodb')
 const db = require('knex')(config)

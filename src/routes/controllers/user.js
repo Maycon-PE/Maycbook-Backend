@@ -76,7 +76,7 @@ module.exports = {
 					const { path, destination, filename } = req.file
 
 					sharp(path)
-						// .resize(200, 200)
+						.resize(200, 200)
 						.jpeg({ quality: 100 })
 						.toFile(`${destination}/uploads/profiles/${filename}.jpg`)
 						.then(() => {
