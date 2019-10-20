@@ -18,7 +18,7 @@ Rotas com o prefixo `/auth` passará por um middleware que verifica a validade d
 	- `/auth/talk` - Recebe uma mensagem do super chat e emite para todos;
 	- `/auth/user/:recipient/:action` - Executa uma ação de notificação;
 	- `/auth/post` - Cria uma publicação;
-	- `/auth/post/:action/:post_id/:where` - Cria um comentário ou uma curtida em alguma publicação.
+	- `/auth/post/:action/:post_id` - Cria um comentário ou uma curtida em alguma publicação.
 
 - GET
 	- `/auth/post?:page` - Faz uma busca por uma publicação;
